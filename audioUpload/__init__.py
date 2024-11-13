@@ -1,8 +1,13 @@
 import os
 import logging
-
+from dotenv import load_dotenv
 import librosa
 import azure.functions as func
+from azure.storage.blob import BlobServiceClient
+
+load_dotenv()
+
+blob_service_client = BlobServiceClient.from_connection_string(os.getenv("STORAGE_CONNECTION_STRING"))
 
 # Contains logic for recieving and storing an audio file...
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -18,13 +23,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         librosa.load(path=audio_file, sr=None)
     except Exception as e:
         return func.HttpResponse(
-            f"Unable to load audio file. Error: {e}", 
+            f"Invalid audio file. Error: {e}", 
             status_code=400
         )
     
-    ### Store audio file in some sort of blob or something
+    try:
+        # Store the audio file in a blob
+        blob_client = blob_service_client.get_blob_client(container="audio-uploads", blob="uploaded_file")
+        blob_client.upload_blob(audio_file.stream, overwrite=True)
 
-    return func.HttpResponse(
-        f"\"{audio_file.filename}\" uploaded successfully.",
-        status_code=200
-    )
+        return func.HttpResponse(
+            f"\"{audio_file.filename}\" uploaded successfully.",
+            status_code=200
+        )
+    except Exception as e:
+        return func.HttpResponse(
+            f"Error occurred while uploading audio file. Error: {e}", 
+            status_code=400
+        )
