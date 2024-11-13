@@ -25,6 +25,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     ### Store audio file in some sort of blob or something
 
     return func.HttpResponse(
-        f"{audio_file.filename} uploaded successfully.",
+        f"\"{audio_file.filename}\" uploaded successfully.",
         status_code=200
     )
