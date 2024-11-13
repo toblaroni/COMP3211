@@ -1,24 +1,30 @@
+import os
 import logging
 
+import librosa
 import azure.functions as func
 
-
+# Contains logic for recieving and storing an audio file...
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function processed a request.')
+    logging.info("Processing audio file upload...")
 
-    name = req.params.get('name')
-    if not name:
-        try:
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get('name')
-
-    if name:
-        return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
-    else:
+    # Grab file from the request    
+    audio_file = req.files.get("file")
+    if not audio_file:
+        return func.HttpResponse("Expected an audio file.", status_code=400)
+    
+    # Use librosa to check that the file can actually be uploaded
+    try:
+        librosa.load(path=audio_file, sr=None)
+    except Exception as e:
         return func.HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
+            f"Unable to load audio file. Error: {e}", 
+            status_code=400
         )
+    
+    ### Store audio file in some sort of blob or something
+
+    return func.HttpResponse(
+        f"{audio_file.filename} uploaded successfully.",
+        status_code=200
+    )
