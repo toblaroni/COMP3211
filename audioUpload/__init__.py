@@ -1,13 +1,17 @@
 import os
 import logging
+
 from dotenv import load_dotenv
 import librosa
+
 import azure.functions as func
 from azure.storage.blob import BlobServiceClient
+from azure.storage.queue import QueueClient
 
 load_dotenv()
 
 blob_service_client = BlobServiceClient.from_connection_string(os.getenv("STORAGE_CONNECTION_STRING"))
+queue_client        = QueueClient.from_connection_string(os.getenv("STORAGE_CONNECTION_STRING"), queue_name="audio-upload-queue")
 
 # Contains logic for recieving and storing an audio file...
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -31,9 +35,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # Reset file stream
         audio_file.stream.seek(0)
 
+        logging.info("Attempting to upload file to blob storage...")
+
         # Store the audio file in a blob
-        blob_client = blob_service_client.get_blob_client(container="audio-uploads", blob="uploaded_file")
+        blob_client = blob_service_client.get_blob_client(container="audio-uploads", blob=f"{audio_file.filename}")
         blob_client.upload_blob(audio_file.stream, overwrite=True)
+        queue_client.send_message(audio_file.filename)  # Add filename to queue to trigger second function
+
+        logging.info("Upload successful.")
 
         return func.HttpResponse(
             f"\"{audio_file.filename}\" uploaded successfully.",
