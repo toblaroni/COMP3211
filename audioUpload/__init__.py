@@ -28,6 +28,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
     
     try:
+        # Reset file stream
+        audio_file.stream.seek(0)
+
         # Store the audio file in a blob
         blob_client = blob_service_client.get_blob_client(container="audio-uploads", blob="uploaded_file")
         blob_client.upload_blob(audio_file.stream, overwrite=True)
@@ -39,5 +42,5 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         return func.HttpResponse(
             f"Error occurred while uploading audio file. Error: {e}", 
-            status_code=400
+            status_code=500
         )
