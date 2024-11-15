@@ -7,7 +7,7 @@ import librosa
 
 import azure.functions as func
 from azure.storage.blob import BlobServiceClient
-from azure.storage.queue import QueueClient
+from azure.storage.queue import QueueClient, BinaryBase64DecodePolicy, BinaryBase64EncodePolicy
 
 load_dotenv()
 
@@ -42,7 +42,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         blob_client = blob_service_client.get_blob_client(container="audio-uploads", blob=f"{audio_file.filename}")
         blob_client.upload_blob(audio_file.stream, overwrite=True)
 
-        queue_client.send_message(f"{audio_file.filename}")  # Add filename to queue to trigger second function
+        queue_client.message_encode_policy = BinaryBase64EncodePolicy()
+        queue_client.message_decode_policy = BinaryBase64DecodePolicy()
+
+        filename_bytes = f"{audio_file.filename}".encode("ascii")
+
+        # This should trigger second function
+        queue_client.send_message(
+            queue_client.message_encode_policy.encode(content=filename_bytes)
+        )  
 
         logging.info("Upload successful.")
 
