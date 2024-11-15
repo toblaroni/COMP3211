@@ -18,11 +18,31 @@ def main(msg: QueueMessage) -> None:
     blob_client = blob_service_client.get_blob_client(container="audio-uploads", blob=filename)
     blob_data = blob_client.download_blob()     # Download the blob
 
-    # Create IO stream
+    # create IO stream
     audio_stream = io.BytesIO(blob_data.readall())
 
-    # We can now use librosa to read cool shit about the audio file
+    # We can now use librosa to read cool stuff about the audio file
     y, sr = librosa.load(audio_stream, sr=None)
 
-    logging.info(f"\n\nSample rate: {sr}")
-    logging.info(f"Audio data shape: {y.shape}\n\n")
+    duration = librosa.get_duration(y=y, sr=sr)
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+
+    pitches, _ = librosa.piptrack(y=y, sr=sr)
+    # filter non zero pitches
+    pitch_values = pitches[pitches > 0]
+    average_pitch = pitch_values.mean() if len(pitch_values) > 0 else 0
+
+    # Brightness
+    spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)
+    brightness = spectral_centroids.mean()
+
+    # Tone
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+    tone = mfccs.mean(axis=1)
+
+    logging.info(f"==== Finished analyzing {filename} ====")
+    logging.info(f"Duration: {duration}")
+    logging.info(f"Tempo: {tempo}")
+    logging.info(f"Pitch: {average_pitch} ")
+    logging.info(f"Brightness: {brightness} ")
+    logging.info(f"Tone: {tone}")
