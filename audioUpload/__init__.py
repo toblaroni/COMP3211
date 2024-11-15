@@ -1,5 +1,6 @@
 import os
 import logging
+import base64
 
 from dotenv import load_dotenv
 import librosa
@@ -40,7 +41,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # Store the audio file in a blob
         blob_client = blob_service_client.get_blob_client(container="audio-uploads", blob=f"{audio_file.filename}")
         blob_client.upload_blob(audio_file.stream, overwrite=True)
-        queue_client.send_message(audio_file.filename)  # Add filename to queue to trigger second function
+
+        queue_client.send_message(f"{audio_file.filename}")  # Add filename to queue to trigger second function
 
         logging.info("Upload successful.")
 
