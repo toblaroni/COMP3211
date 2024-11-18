@@ -36,13 +36,8 @@ def main(msg: QueueMessage) -> None:
     spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)
     brightness = spectral_centroids.mean()
 
-    # Tone
-    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-    tone = mfccs.mean(axis=1)
-
     logging.info(f"==== Finished analyzing {filename} ====")
-    logging.info(f"Duration: {duration}")
-    logging.info(f"Tempo: {tempo}")
-    logging.info(f"Pitch: {average_pitch} ")
-    logging.info(f"Brightness: {brightness} ")
-    logging.info(f"Tone: {tone}")
+    logging.info(f"Duration: {round(duration)} seconds")
+    logging.info(f"Tempo: {round(tempo)}BPM")
+    logging.info(f"Pitch: {round(average_pitch)}Hz")
+    logging.info(f"Center of Mass (Brightness): {round(brightness)}Hz")
