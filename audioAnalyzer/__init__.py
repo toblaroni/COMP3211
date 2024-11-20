@@ -89,7 +89,7 @@ def main(msg: QueueMessage) -> None:
     # Upload results to Blob storage
     result_blob_client = blob_service_client.get_blob_client(
         container="audio-analysis-results", 
-        blob=f"{filename}-analysis.json"
+        blob=f"{file_no_ext}-analysis.json"
     )
 
     result_blob_client.upload_blob(json.dumps(json_data), overwrite=True)
