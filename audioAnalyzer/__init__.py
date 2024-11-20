@@ -2,6 +2,7 @@ import logging
 import io
 import os
 import json
+from pathlib import Path
 
 from dotenv import load_dotenv
 import librosa
@@ -30,7 +31,10 @@ def main(msg: QueueMessage) -> None:
 
     # Basic Analysis
     duration = librosa.get_duration(y=y, sr=sr)
+
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    # Make sure that tempo is a float
+    tempo = float(tempo) if isinstance(tempo, (int, float, np.number)) else 0.0
 
     # Pitch
     pitches, _ = librosa.piptrack(y=y, sr=sr)
@@ -68,7 +72,7 @@ def main(msg: QueueMessage) -> None:
     json_data = {
         "name": filename,
         "duration": float(duration),
-        "tempo": float(tempo),
+        "tempo": tempo,
         "average_pitch": float(average_pitch),
         "brightness": float(brightness),
         "harmonic_energy": float(harmonic_energy),
@@ -80,15 +84,21 @@ def main(msg: QueueMessage) -> None:
         "harmonic_complexity": float(tonnetz_mean)
     }
 
+    file_no_ext = Path(filename).stem
+
     # Upload results to Blob storage
-    result_blob_client = blob_service_client.get_blob_client(container="audio-analysis-results", blob=f"{filename}-analysis.json")
+    result_blob_client = blob_service_client.get_blob_client(
+        container="audio-analysis-results", 
+        blob=f"{filename}-analysis.json"
+    )
+
     result_blob_client.upload_blob(json.dumps(json_data), overwrite=True)
 
     logging.info(f"==== Finished analyzing {filename} ====")
-    logging.info(f"Duration: {round(duration)} seconds")
-    logging.info(f"Tempo: {round(tempo)} BPM")
-    logging.info(f"Average Pitch: {round(average_pitch)} Hz")
-    logging.info(f"Brightness: {round(brightness)} Hz")
+    logging.info(f"Duration: {duration} seconds")
+    logging.info(f"Tempo: {tempo} BPM")
+    logging.info(f"Average Pitch: {average_pitch} Hz")
+    logging.info(f"Brightness: {brightness} Hz")
     logging.info(f"Harmonic Energy: {harmonic_energy}")
     logging.info(f"Percussive Energy: {percussive_energy}")
     logging.info(f"Spectral Bandwidth: {spectral_bandwidth}")
